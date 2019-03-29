@@ -1,0 +1,82 @@
+Hashicorp Vault
+
+links
+
+https://docs.docker.com/samples/library/vault/
+https://medium.com/@pcarion/a-consul-a-vault-and-a-docker-walk-into-a-bar-d5a5bf897a87
+https://www.katacoda.com/courses/docker-production/vault-secrets
+
+
+Vagrant environment
+
+https://app.vagrantup.com/seanschade/boxes/hashistack
+
+=========================================
+
+apt install vagrant
+
+mkdir -p /home/user/vagrant/hashistack
+
+cd /home/user/vagrant/hashistack
+
+vagrant init seanschade/hashistack      -   creating Vagrantfile with default setting
+
+cat Vagrantfile
+
+vagrant up                                                          -   run Vagrant box
+
+vagrant ssh
+
+---
+
+vagrant destroy
+
+=========================================
+SSH Secrets Engine
+
+https://www.vaultproject.io/docs/secrets/ssh/signed-ssh-certificates.html
+https://www.vaultproject.io/docs/secrets/ssh/one-time-ssh-passwords.html
+https://github.com/hashicorp/vault-ssh-helper
+https://medium.com/@RidhamTarpara/install-go-1-11-on-ubuntu-18-04-16-04-lts-8c098c503c5f
+
+installing  vault-ssh-helper
+
+sudo apt update
+sudo apt-get -y upgrade
+
+cd /tmp
+wget https://dl.google.com/go/go1.11.linux-amd64.tar.gz
+
+add global variable into ~/.profile:
+
+export GOROOT=/usr/local/go
+export GOPATH=$HOME/go
+export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
+
+To check Go version
+
+go version
+go env
+
+Docker environment
+Some consideration about  --cap-add=IPC_LOCK  and docker storage driver AUFS
+https://docs.docker.com/samples/library/vault
+
+Note the --cap-add=IPC_LOCK: this is required in order for Vault to lock memory, which prevents it from being swapped to disk. This is highly recommended. In a non-development environment, if you do not wish to use this functionality, you must add "disable_mlock: true" to the configuration information.
+
+Memory Locking and ‘setcap’
+
+The container will attempt to lock memory to prevent sensitive values from being swapped to disk and as a result must have --cap-add=IPC_LOCK provided to docker run. Since the Vault binary runs as a non-root user, setcap is used to give the binary the ability to lock memory. With some Docker storage plugins in some distributions this call will not work correctly; it seems to fail most often with AUFS. The memory locking behavior can be disabled by setting the SKIP_SETCAP environment variable to any non-empty value.
+
+
+=
+If vault storage not configured properly the vault web port is unaccessable
+=
+
+
+docker run --rm -p8200:8200 -e 'VAULT_LOCAL_CONFIG={"disable_mlock": true,"ui":true,"backend": {"file": {"path": "/vault/file"}}, "default_lease_ttl": "168h", "max_lease_ttl": "720h","listener":{"tcp": {"address": "0.0.0.0:8200","tls_disable":true}}} ' vault server
+
+
+imgs=$(docker ps -a --filter "ancestor=vault" --format "{{.ID}}") && docker rm -f ${imgs}
+
+
